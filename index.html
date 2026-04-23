@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ES IOT Dashboard</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background: linear-gradient(135deg, #74ebd5 0%, #ACB6E5 100%);
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    header {
+      background: #333;
+      color: white;
+      text-align: center;
+      padding: 15px;
+      font-size: 24px;
+      font-weight: bold;
+      letter-spacing: 2px;
+    }
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 80px;
+      height: 40px;
+      margin: 20px;
+    }
+    .switch input {
+      display: none;
+    }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #ccc;
+      transition: .4s;
+      border-radius: 40px;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 32px;
+      width: 32px;
+      left: 4px;
+      bottom: 4px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+    input:checked + .slider {
+      background-color: #4CAF50;
+    }
+    input:checked + .slider:before {
+      transform: translateX(40px);
+    }
+    #status {
+      font-size: 18px;
+      margin-top: 10px;
+      color: #333;
+    }
+    footer {
+      background: #333;
+      color: white;
+      text-align: center;
+      padding: 10px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <header>ES IOT</header>
+  <main>
+    <label class="switch">
+      <input type="checkbox" id="relaySwitch" onclick="toggleRelay()">
+      <span class="slider"></span>
+    </label>
+    <p id="status">Status: Unknown</p>
+  </main>
+  <footer>&copy; 2026 ES IOT Dashboard</footer>
+
+  <!-- MQTT JS Library -->
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+  <script>
+    // Connect ke broker HiveMQ (WebSocket)
+    const client = mqtt.connect("wss://broker.hivemq.com:8884/mqtt");
+
+    client.on("connect", () => {
+      console.log("Connected to MQTT broker");
+      client.subscribe("es_iot/status"); // subscribe status dari Wemos
+    });
+
+    function toggleRelay() {
+      const checked = document.getElementById("relaySwitch").checked;
+      if (checked) {
+        client.publish("es_iot/control", "ON");
+      } else {
+        client.publish("es_iot/control", "OFF");
+      }
+    }
+
+    client.on("message", (topic, message) => {
+      if (topic === "es_iot/status") {
+        document.getElementById("status").innerText = "Status: " + message.toString();
+      }
+    });
+  </script>
+</body>
+</html>
