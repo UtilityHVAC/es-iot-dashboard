@@ -90,29 +90,37 @@
 
   <!-- MQTT JS Library -->
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
-  <script>
-    // Connect ke broker HiveMQ (WebSocket)
-    const client = mqtt.connect("wss://broker.hivemq.com:8884/mqtt");
+<script>
+  const client = mqtt.connect("wss://broker.hivemq.com:8884/mqtt");
 
-    client.on("connect", () => {
-      console.log("Connected to MQTT broker");
-      client.subscribe("es_iot/status"); // subscribe status dari Wemos
-    });
+  client.on("connect", () => {
+    console.log("Connected to MQTT broker");
+    client.subscribe("es_iot/status"); // subscribe status dari Wemos
+  });
 
-    function toggleRelay() {
-      const checked = document.getElementById("relaySwitch").checked;
-      if (checked) {
-        client.publish("es_iot/control", "ON");
-      } else {
-        client.publish("es_iot/control", "OFF");
+  function toggleRelay() {
+    const checked = document.getElementById("relaySwitch").checked;
+    if (checked) {
+      client.publish("es_iot/control", "ON");
+    } else {
+      client.publish("es_iot/control", "OFF");
+    }
+  }
+
+  client.on("message", (topic, message) => {
+    if (topic === "es_iot/status") {
+      const status = message.toString();
+      document.getElementById("status").innerText = "Status: " + status;
+
+      // Sinkronisasi tombol dengan status
+      const relaySwitch = document.getElementById("relaySwitch");
+      if (status === "Relay ON") {
+        relaySwitch.checked = true;
+      } else if (status === "Relay OFF") {
+        relaySwitch.checked = false;
       }
     }
-
-    client.on("message", (topic, message) => {
-      if (topic === "es_iot/status") {
-        document.getElementById("status").innerText = "Status: " + message.toString();
-      }
-    });
-  </script>
+  });
+</script>
 </body>
 </html>
