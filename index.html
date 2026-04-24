@@ -104,15 +104,9 @@
     }
   
     if (topic === topicStatus) {
-      document.getElementById("statusLabel").innerText = "Status: " + msg;
-      const indicator = document.getElementById("statusIndicator");
-      if (msg === "ON") {
-        indicator.className = "status-indicator status-on";
-      } else if (msg === "OFF") {
-        indicator.className = "status-indicator status-off";
-      } else {
-        indicator.className = "status-indicator";
-      }
+    document.getElementById("statusLabel").innerText = "Status: " + msg;
+    const indicator = document.getElementById("statusIndicator");
+    indicator.className = "status-indicator " + (msg === "ON" ? "status-on" : "status-off");
     }
   });
 
