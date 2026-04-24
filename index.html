@@ -1,147 +1,127 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
   <meta charset="UTF-8">
-  <title>ES IOT Dashboard</title>
+  <title>IoT Dashboard - Device01</title>
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
   <style>
-    body { 
-      font-family: Arial; 
-      margin:0; 
-      background:linear-gradient(135deg,#74ebd5,#ACB6E5); 
-      display:flex; 
-      flex-direction:column; 
-      min-height:100vh; 
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      text-align: center;
+      padding: 30px;
     }
-    header, footer { 
-      background:#333; 
-      color:white; 
-      text-align:center; 
-      padding:15px; 
+    h2 {
+      color: #333;
     }
-    header { 
-      font-size:24px; 
-      font-weight:bold; 
-      letter-spacing:2px; 
+    #identityLabel, #statusLabel {
+      font-size: 18px;
+      margin: 10px 0;
+      color: #444;
     }
-    footer { 
-      font-size:14px; 
+    input[type="text"] {
+      padding: 8px;
+      width: 200px;
+      margin: 10px 0;
+      border: 1px solid #ccc;
+      border-radius: 4px;
     }
-    main { 
-      flex:1; 
-      display:flex; 
-      flex-direction:column; 
-      justify-content:center; 
-      align-items:center; 
+    button {
+      padding: 10px 20px;
+      margin: 5px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
     }
-    .switch { 
-      position:relative; 
-      display:inline-block; 
-      width:80px;
-      height:40px; 
-      margin:20px; 
+    button:hover {
+      opacity: 0.9;
     }
-    .switch input { 
-      display:none; 
+    .btn-on {
+      background-color: #4CAF50;
+      color: white;
     }
-    .slider { 
-      position:absolute; 
-      cursor:pointer; 
-      top:0; 
-      left:0; 
-      right:0; 
-      bottom:0; 
-      background:#ccc; 
-      transition:.4s; 
-      border-radius:40px; 
+    .btn-off {
+      background-color: #f44336;
+      color: white;
     }
-    .slider:before { 
-      position:absolute; 
-      content:""; 
-      height:32px; 
-      width:32px; 
-      left:4px; 
-      bottom:4px; 
-      background:white; 
-      transition:.4s; 
-      border-radius:50%; 
+    .btn-set {
+      background-color: #2196F3;
+      color: white;
     }
-    input:checked + .slider { 
-      background:#4CAF50; 
+    .status-indicator {
+      display: inline-block;
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      margin-left: 10px;
+      background-color: gray;
     }
-    input:checked + .slider:before { 
-      transform:translateX(40px); 
+    .status-on {
+      background-color: green;
     }
-    #status { 
-      font-size:18px; 
-      margin-top:10px; 
-      color:#333; 
-    }
-    #identityLabel { 
-      font-size:16px; 
-      margin-top:10px; 
-      color:#222; 
-      font-weight:bold; 
+    .status-off {
+      background-color: red;
     }
   </style>
 </head>
 <body>
-  <header>ES IOT</header>
-  <main>
-    <label class="switch">
-      <input type="checkbox" id="relaySwitch" onclick="toggleRelay()">
-      <span class="slider"></span>
-    </label>
-    <p id="status">Status: Unknown</p>
+  <h2>IoT Dashboard - Device01</h2>
+  <p id="identityLabel">Identitas: (belum ada)</p>
+  <input type="text" id="identityInput" placeholder="Masukkan identitas baru">
+  <button class="btn-set" onclick="setIdentity()">Set Identity</button>
+  <br><br>
+  <button class="btn-on" onclick="sendControl('ON')">Relay ON</button>
+  <button class="btn-off" onclick="sendControl('OFF')">Relay OFF</button>
+  <p id="statusLabel">Status: (belum ada) <span id="statusIndicator" class="status-indicator"></span></p>
 
-    <!-- Input identitas -->
-    <input type="text" id="identityInput" placeholder="Masukkan identitas tombol">
-    <button onclick="saveIdentity()">Simpan</button>
-    <p id="identityLabel"></p>
-  </main>
-  <footer>&copy; 2026 ES IOT Dashboard</footer>
+<script>
+  const client = mqtt.connect("wss://broker.hivemq.com:8884/mqtt");
 
-  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
-  <script>
-    const client = mqtt.connect("wss://broker.hivemq.com:8884/mqtt");
+  const topicIdentity = "es_iot/device01/identity";
+  const topicStatus   = "es_iot/device01/status";
+  const topicControl  = "es_iot/device01/control";
 
-    client.on("connect", () => {
-      client.subscribe("es_iot/status");
-      client.subscribe("es_iot/identity");
-    });
+  client.on("connect", () => {
+    console.log("Connected to HiveMQ");
+    client.subscribe(topicIdentity);
+    client.subscribe(topicStatus);
 
-    function toggleRelay() {
-      const checked = document.getElementById("relaySwitch").checked;
-      client.publish("es_iot/control", checked ? "ON" : "OFF");
+    const savedIdentity = localStorage.getItem("relayIdentity");
+    if (savedIdentity) {
+      document.getElementById("identityLabel").innerText = "Identitas: " + savedIdentity;
+      document.getElementById("identityInput").value = savedIdentity;
     }
+  });
 
-    client.on("message", (topic, message) => {
-      if (topic === "es_iot/status") {
-        const status = message.toString();
-        document.getElementById("status").innerText = "Status: " + status;
-        document.getElementById("relaySwitch").checked = (status === "Relay ON");
+  client.on("message", (topic, message) => {
+    const msg = message.toString();
+    if (topic === topicIdentity) {
+      document.getElementById("identityLabel").innerText = "Identitas: " + msg;
+      localStorage.setItem("relayIdentity", msg);
+    } else if (topic === topicStatus) {
+      document.getElementById("statusLabel").innerText = "Status: " + msg;
+      const indicator = document.getElementById("statusIndicator");
+      if (msg.includes("ON")) {
+        indicator.className = "status-indicator status-on";
+      } else if (msg.includes("OFF")) {
+        indicator.className = "status-indicator status-off";
+      } else {
+        indicator.className = "status-indicator";
       }
-      if (topic === "es_iot/identity") {
-        const identity = message.toString();
-        document.getElementById("identityLabel").innerText = "Identitas: " + identity;
-        localStorage.setItem("relayIdentity", identity);
-      }
-    });
-
-    // Load identitas dari localStorage saat halaman dibuka
-    window.onload = () => {
-      const savedIdentity = localStorage.getItem("relayIdentity");
-      if (savedIdentity) {
-        document.getElementById("identityLabel").innerText = "Identitas: " + savedIdentity;
-        document.getElementById("identityInput").value = savedIdentity;
-      }
-    };
-
-    function saveIdentity() {
-      const identity = document.getElementById("identityInput").value;
-      client.publish("es_iot/identity", identity);
-      localStorage.setItem("relayIdentity", identity);
-      document.getElementById("identityLabel").innerText = "Identitas: " + identity;
     }
-  </script>
+  });
+
+  function setIdentity() {
+    const newId = document.getElementById("identityInput").value;
+    if (newId.length > 0) {
+      client.publish(topicIdentity, newId, {retain:true});
+    }
+  }
+
+  function sendControl(cmd) {
+    client.publish(topicControl, cmd);
+  }
+</script>
 </body>
 </html>
