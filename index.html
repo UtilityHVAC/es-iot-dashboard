@@ -67,9 +67,10 @@
         logDebug("Received: " + topic + " → " + msg);
 
         if (topic === topicIdentity) {
+          // Update label saja
           document.getElementById("identityLabel").innerText = "Identitas: " + msg;
-          document.getElementById("identityInput").value = msg;
           localStorage.setItem("relayIdentity", msg);
+          // Jangan timpa input kalau user sedang mengetik
         }
 
         if (topic === topicStatus) {
