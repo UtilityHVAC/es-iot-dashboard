@@ -36,7 +36,7 @@
     .switch { 
       position:relative; 
       display:inline-block; 
-      width:80px; 
+      width:80px;
       height:40px; 
       margin:20px; 
     }
@@ -76,6 +76,12 @@
       margin-top:10px; 
       color:#333; 
     }
+    #identityLabel { 
+      font-size:16px; 
+      margin-top:10px; 
+      color:#222; 
+      font-weight:bold; 
+    }
   </style>
 </head>
 <body>
@@ -86,6 +92,11 @@
       <span class="slider"></span>
     </label>
     <p id="status">Status: Unknown</p>
+
+    <!-- Input identitas -->
+    <input type="text" id="identityInput" placeholder="Masukkan identitas tombol">
+    <button onclick="saveIdentity()">Simpan</button>
+    <p id="identityLabel"></p>
   </main>
   <footer>&copy; 2026 ES IOT Dashboard</footer>
 
@@ -94,8 +105,8 @@
     const client = mqtt.connect("wss://broker.hivemq.com:8884/mqtt");
 
     client.on("connect", () => {
-      console.log("Connected to MQTT broker");
       client.subscribe("es_iot/status");
+      client.subscribe("es_iot/identity");
     });
 
     function toggleRelay() {
@@ -109,7 +120,28 @@
         document.getElementById("status").innerText = "Status: " + status;
         document.getElementById("relaySwitch").checked = (status === "Relay ON");
       }
+      if (topic === "es_iot/identity") {
+        const identity = message.toString();
+        document.getElementById("identityLabel").innerText = "Identitas: " + identity;
+        localStorage.setItem("relayIdentity", identity);
+      }
     });
+
+    // Load identitas dari localStorage saat halaman dibuka
+    window.onload = () => {
+      const savedIdentity = localStorage.getItem("relayIdentity");
+      if (savedIdentity) {
+        document.getElementById("identityLabel").innerText = "Identitas: " + savedIdentity;
+        document.getElementById("identityInput").value = savedIdentity;
+      }
+    };
+
+    function saveIdentity() {
+      const identity = document.getElementById("identityInput").value;
+      client.publish("es_iot/identity", identity);
+      localStorage.setItem("relayIdentity", identity);
+      document.getElementById("identityLabel").innerText = "Identitas: " + identity;
+    }
   </script>
 </body>
 </html>
