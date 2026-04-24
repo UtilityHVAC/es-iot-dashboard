@@ -96,7 +96,7 @@
 
   client.on("message", (topic, message) => {
     const msg = message.toString();
-  
+    console.log("Received:", topic, message.toString());
     if (topic === topicIdentity) {
       document.getElementById("identityLabel").innerText = "Identitas: " + msg;
       document.getElementById("identityInput").value = msg; // update input langsung
