@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>IoT Dashboard - Device01</title>
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
   <style>
     body { font-family: Arial, sans-serif; background: #f4f6f8; text-align: center; padding: 30px; }
     h2 { color: #333; }
@@ -31,9 +32,6 @@
 
   <div id="debug"><strong>Debug log:</strong><br></div>
 
-  <!-- Library harus dimuat dulu -->
-  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
-  <!-- Baru kemudian kode JS -->
   <script>
     const topicIdentity = "es_iot/device01/identity";
     const topicStatus   = "es_iot/device01/status";
@@ -67,10 +65,12 @@
         logDebug("Received: " + topic + " → " + msg);
 
         if (topic === topicIdentity) {
-          // Update label saja
-          document.getElementById("identityLabel").innerText = "Identitas: " + msg;
-          localStorage.setItem("relayIdentity", msg);
-          // Jangan timpa input kalau user sedang mengetik
+          const currentIdentity = localStorage.getItem("relayIdentity");
+          if (msg !== currentIdentity) {
+            document.getElementById("identityLabel").innerText = "Identitas: " + msg;
+            localStorage.setItem("relayIdentity", msg);
+          }
+          // Input tidak diubah, biar user bebas mengetik
         }
 
         if (topic === topicStatus) {
@@ -78,8 +78,6 @@
           const indicator = document.getElementById("statusIndicator");
           if (indicator) {
             indicator.className = "status-indicator " + (msg === "ON" ? "status-on" : "status-off");
-          } else {
-            logDebug("⚠️ statusIndicator element not found!");
           }
         }
       });
