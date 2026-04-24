@@ -3,66 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <title>IoT Dashboard - Device01</title>
-  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js" defer></script>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f4f6f8;
-      text-align: center;
-      padding: 30px;
-    }
-    h2 {
-      color: #333;
-    }
-    #identityLabel, #statusLabel {
-      font-size: 18px;
-      margin: 10px 0;
-      color: #444;
-    }
-    input[type="text"] {
-      padding: 8px;
-      width: 200px;
-      margin: 10px 0;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-    }
-    button {
-      padding: 10px 20px;
-      margin: 5px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 16px;
-    }
-    button:hover {
-      opacity: 0.9;
-    }
-    .btn-on {
-      background-color: #4CAF50;
-      color: white;
-    }
-    .btn-off {
-      background-color: #f44336;
-      color: white;
-    }
-    .btn-set {
-      background-color: #2196F3;
-      color: white;
-    }
-    .status-indicator {
-      display: inline-block;
-      width: 15px;
-      height: 15px;
-      border-radius: 50%;
-      margin-left: 10px;
-      background-color: gray;
-    }
-    .status-on {
-      background-color: green;
-    }
-    .status-off {
-      background-color: red;
-    }
+    body { font-family: Arial, sans-serif; background: #f4f6f8; text-align: center; padding: 30px; }
+    h2 { color: #333; }
+    #identityLabel, #statusLabel { font-size: 18px; margin: 10px 0; color: #444; }
+    input[type="text"] { padding: 8px; width: 200px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; }
+    button { padding: 10px 20px; margin: 5px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+    button:hover { opacity: 0.9; }
+    .btn-on { background-color: #4CAF50; color: white; }
+    .btn-off { background-color: #f44336; color: white; }
+    .btn-set { background-color: #2196F3; color: white; }
+    .status-indicator { display: inline-block; width: 15px; height: 15px; border-radius: 50%; margin-left: 10px; background-color: gray; }
+    .status-on { background-color: green; }
+    .status-off { background-color: red; }
+    #debug { margin-top: 20px; padding: 10px; background: #eee; text-align: left; font-size: 14px; max-height: 200px; overflow-y: auto; }
   </style>
 </head>
 <body>
@@ -75,6 +30,8 @@
   <button class="btn-off" onclick="sendControl('OFF')">Relay OFF</button>
   <p id="statusLabel">Status: (belum ada) <span id="statusIndicator" class="status-indicator"></span></p>
 
+  <div id="debug"><strong>Debug log:</strong><br></div>
+
 <script defer>
   const client = mqtt.connect("wss://broker.hivemq.com:8884/mqtt");
 
@@ -82,8 +39,14 @@
   const topicStatus   = "es_iot/device01/status";
   const topicControl  = "es_iot/device01/control";
 
+  function logDebug(msg) {
+    const debugDiv = document.getElementById("debug");
+    debugDiv.innerHTML += msg + "<br>";
+    debugDiv.scrollTop = debugDiv.scrollHeight;
+  }
+
   client.on("connect", () => {
-    console.log("Connected to HiveMQ");
+    logDebug("Connected to HiveMQ");
     client.subscribe(topicIdentity);
     client.subscribe(topicStatus);
 
@@ -96,35 +59,36 @@
 
   client.on("message", (topic, message) => {
     const msg = message.toString();
-    console.log("Received:", topic, message.toString());
+    logDebug("Received: " + topic + " → " + msg);
+
     if (topic === topicIdentity) {
       document.getElementById("identityLabel").innerText = "Identitas: " + msg;
-      document.getElementById("identityInput").value = msg; // update input langsung
+      document.getElementById("identityInput").value = msg;
       localStorage.setItem("relayIdentity", msg);
     }
-  
-    if (topic === topicStatus) {
-    document.getElementById("statusLabel").innerText = "Status: " + msg;
-    const indicator = document.getElementById("statusIndicator");
-    indicator.className = "status-indicator " + (msg === "ON" ? "status-on" : "status-off");
-          if (indicator) {
-        indicator.className = "status-indicator " + (msg === "ON" ? "status-on" : "status-off");
-      }
-      console.log("Indicator element:", document.getElementById("statusIndicator"));
 
+    if (topic === topicStatus) {
+      document.getElementById("statusLabel").innerText = "Status: " + msg;
+      const indicator = document.getElementById("statusIndicator");
+      if (indicator) {
+        indicator.className = "status-indicator " + (msg === "ON" ? "status-on" : "status-off");
+      } else {
+        logDebug("⚠️ statusIndicator element not found!");
+      }
     }
   });
-
 
   function setIdentity() {
     const newId = document.getElementById("identityInput").value;
     if (newId.length > 0) {
       client.publish(topicIdentity, newId, {retain:true});
+      logDebug("Published identity: " + newId);
     }
   }
 
   function sendControl(cmd) {
     client.publish(topicControl, cmd);
+    logDebug("Published control: " + cmd);
   }
 </script>
 </body>
