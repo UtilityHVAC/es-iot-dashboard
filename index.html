@@ -75,7 +75,7 @@
   <button class="btn-off" onclick="sendControl('OFF')">Relay OFF</button>
   <p id="statusLabel">Status: (belum ada) <span id="statusIndicator" class="status-indicator"></span></p>
 
-<script>
+<script defer>
   const client = mqtt.connect("wss://broker.hivemq.com:8884/mqtt");
 
   const topicIdentity = "es_iot/device01/identity";
@@ -107,6 +107,11 @@
     document.getElementById("statusLabel").innerText = "Status: " + msg;
     const indicator = document.getElementById("statusIndicator");
     indicator.className = "status-indicator " + (msg === "ON" ? "status-on" : "status-off");
+          if (indicator) {
+        indicator.className = "status-indicator " + (msg === "ON" ? "status-on" : "status-off");
+      }
+      console.log("Indicator element:", document.getElementById("statusIndicator"));
+
     }
   });
 
